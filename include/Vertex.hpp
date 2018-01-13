@@ -28,9 +28,9 @@ constexpr size_t offsetofImpl(T const* t, U T::*a) {
 
 class Vertex {
 public:
-    using PositionType = Eigen::Matrix<float, 1, 4>;
-    using ReferencePositionType = PositionType&;
-    using ConstReferencePositionType = const PositionType&;
+    using Vec4 = Eigen::Matrix<float, 1, 4>;
+    using PositionType = Vec4;
+    using ColorType = Vec4;
 
     using FloatType = float;
     using IntType = std::int32_t;
@@ -40,20 +40,40 @@ public:
     Vertex(FloatType x, FloatType y, FloatType z) : Vertex{x, y, z, 1.0} {}
     Vertex(FloatType x, FloatType y, FloatType z, FloatType h)
         : Position{x, y, z, h} {}
-    Vertex(ConstReferencePositionType position) : Position{position} {}
+    Vertex(const PositionType& position) : Position{position} {}
+    Vertex(const PositionType& position, const ColorType& color)
+        : Position{position}, Color{color} {}
 
-    constexpr ConstReferencePositionType GetPosition() const {
+    Vertex(Vertex&& v) = default;
+    Vertex(const Vertex& v) = default;
+
+    void SetColor(const ColorType& color) noexcept { Color = color; }
+
+    constexpr const PositionType& GetPosition() const noexcept {
         return Position;
     }
+    constexpr const ColorType& GetColor() const noexcept { return Color; }
 
-    static constexpr IntType GetTupleSize() { return TUPLE_SIZE; }
-    static constexpr IntType GetOffset() { return offsetOf(Vertex, Position); }
-    static constexpr IntType GetStride() { return sizeof(Vertex); }
+    static constexpr IntType GetPositionTupleSize() noexcept {
+        return POSITION_TUPLE_SIZE;
+    }
+    static constexpr IntType GetColorTupleSize() noexcept {
+        return COLOR_TUPLE_SIZE;
+    }
+    static constexpr IntType GetPositionOffset() noexcept {
+        return offsetOf(Vertex, Position);
+    }
+    static constexpr IntType GetColorOffset() noexcept {
+        return offsetOf(Vertex, Position);
+    }
+    static constexpr IntType GetStride() noexcept { return sizeof(Vertex); }
 
 private:
-    static const IntType TUPLE_SIZE = 4;
+    static const IntType POSITION_TUPLE_SIZE = 4;
+    static const IntType COLOR_TUPLE_SIZE = 4;
 
     PositionType Position;
+    ColorType Color;
 };
 
 #undef offsetOf

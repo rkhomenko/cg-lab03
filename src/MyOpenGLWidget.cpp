@@ -220,7 +220,11 @@ void MyOpenGLWidget::UpdateOnChange(int width, int height) {
     const Mat4x4 scaleMatrix = GenerateScaleMatrix(width, height);
     const Mat4x4 transformMatrix = scaleMatrix * projectionMatrix;
 
-    Layers = EllipsoidLayer.GenerateVertices(rotateMatrix, transformMatrix);
+    Vec3 light = Vec3(1, 0, 0);
+    Vec3 toObserver = Vec3(0, 0, 1);
+    Lighting lighting = {0.25, 0.3, 0.1, light, toObserver};
+    Layers = EllipsoidLayer.GenerateVertices(rotateMatrix, transformMatrix,
+                                             lighting);
 }
 
 void MyOpenGLWidget::OnWidgetUpdate() {

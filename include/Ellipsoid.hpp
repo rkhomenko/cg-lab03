@@ -26,6 +26,32 @@ using SizeType = std::size_t;
 using LenghtType = float;
 using VertexVector = std::vector<Vertex>;
 
+class Lighting {
+public:
+    Lighting(float ambientCoeff,
+             float specularCoeff,
+             float diffuseCoeff,
+             const Vec3& light,
+             const Vec3& toObserverVec)
+        : AmbientCoeff{ambientCoeff},
+          SpecularCoeff{specularCoeff},
+          DiffuseCoeff{diffuseCoeff},
+          Light{light},
+          ToObserverVec{toObserverVec} {}
+
+    Vec4 Calculate(const Vec3& point,
+                   const Vec3& normal,
+                   const Vec3& color) const;
+
+private:
+    float AmbientCoeff;
+    float SpecularCoeff;
+    float DiffuseCoeff;
+
+    Vec3 Light;
+    Vec3 ToObserverVec;
+};
+
 class Layer {
 public:
     Layer() = default;
@@ -36,7 +62,8 @@ public:
           SizeType n,
           LenghtType deltaH,
           const Mat4x4& transformMatrix,
-          const Vec3& viewPoint);
+          const Vec3& viewPoint,
+          const Lighting& lighting);
 
     const VertexVector& GetVertices() const;
     SizeType GetItemsCount() const;
@@ -50,7 +77,8 @@ private:
                           SizeType n,
                           LenghtType deltaH,
                           const Mat4x4& transformMatrix,
-                          const Vec3& viewPoint);
+                          const Vec3& viewPoint,
+                          const Lighting& lighting);
 
     VertexVector Vertices;
 };
@@ -69,7 +97,8 @@ public:
 
     SizeType GetVertexCount() const;
     LayerVector GenerateVertices(const Mat4x4& transfomMatrix,
-                                 const Mat4x4& scaleMatrix) const;
+                                 const Mat4x4& scaleMatrix,
+                                 const Lighting& lighting) const;
 
 private:
     static LayerVector ApplyMatrix(const LayerVector& layers,

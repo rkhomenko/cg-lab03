@@ -5,7 +5,11 @@
 
 #version 330
 attribute highp vec4 position;
+attribute lowp vec4 color;
+
+varying lowp vec4 vColor;
 
 void main() {
+    vColor = color;
     gl_Position = position;
 }

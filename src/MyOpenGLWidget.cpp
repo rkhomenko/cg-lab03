@@ -78,6 +78,8 @@ void MyOpenGLWidget::OZAngleChangedSlot(FloatType angle) {
 void MyOpenGLWidget::initializeGL() {
     initializeOpenGLFunctions();
 
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this,
             &MyOpenGLWidget::CleanUp);
 
@@ -92,7 +94,7 @@ void MyOpenGLWidget::initializeGL() {
         QApplication::quit();
     }
 
-    Buffer = new QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
+    Buffer = new QOpenGLBuffer;
     Buffer->create();
     Buffer->bind();
     Buffer->setUsagePattern(QOpenGLBuffer::DynamicDraw);
@@ -114,17 +116,21 @@ void MyOpenGLWidget::initializeGL() {
     VertexArray->bind();
 
     int posAttr = ShaderProgram->attributeLocation(POSITION);
+    int colorAttr = ShaderProgram->attributeLocation(COLOR);
     ShaderProgram->enableAttributeArray(posAttr);
-    ShaderProgram->setAttributeBuffer(posAttr, GL_FLOAT, Vertex::GetOffset(),
-                                      Vertex::GetTupleSize(),
-                                      Vertex::GetStride());
-    auto color = QVector4D(0.0f, 0.0f, 1.0f, 1.0f);
-    ShaderProgram->bind();
-    ShaderProgram->setUniformValue(COLOR, color);
+    ShaderProgram->setAttributeBuffer(
+        posAttr, GL_FLOAT, Vertex::GetPositionOffset(),
+        Vertex::GetPositionTupleSize(), Vertex::GetStride());
+    ShaderProgram->enableAttributeArray(colorAttr);
+    ShaderProgram->setAttributeBuffer(
+        colorAttr, GL_FLOAT, Vertex::GetColorOffset(),
+        Vertex::GetColorTupleSize(), Vertex::GetStride());
+
+    ShaderProgram->disableAttributeArray(posAttr);
+    ShaderProgram->disableAttributeArray(colorAttr);
 
     VertexArray->release();
     Buffer->release();
-    ShaderProgram->release();
 }
 
 void MyOpenGLWidget::resizeGL(int width, int height) {
@@ -137,7 +143,8 @@ void MyOpenGLWidget::paintGL() {
         QApplication::quit();
     }
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glShadeModel(GL_SMOOTH);
 
     Buffer->destroy();
     if (!Buffer->create()) {
@@ -163,19 +170,26 @@ void MyOpenGLWidget::paintGL() {
     VertexArray->create();
     VertexArray->bind();
     int posAttr = ShaderProgram->attributeLocation(POSITION);
+    int colorAttr = ShaderProgram->attributeLocation(COLOR);
     ShaderProgram->enableAttributeArray(posAttr);
-    ShaderProgram->setAttributeBuffer(posAttr, GL_FLOAT, Vertex::GetOffset(),
-                                      Vertex::GetTupleSize(),
-                                      Vertex::GetStride());
+    ShaderProgram->setAttributeBuffer(
+        posAttr, GL_FLOAT, Vertex::GetPositionOffset(),
+        Vertex::GetPositionTupleSize(), Vertex::GetStride());
+    ShaderProgram->enableAttributeArray(colorAttr);
+    ShaderProgram->setAttributeBuffer(
+        colorAttr, GL_FLOAT, Vertex::GetColorOffset(),
+        Vertex::GetColorTupleSize(), Vertex::GetStride());
     {
         int offset = 0;
         for (auto&& layer : Layers) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             int count = layer.GetItemsCount();
             glDrawArrays(GL_TRIANGLES, offset, count);
             offset += count;
         }
     }
+
+    ShaderProgram->disableAttributeArray(posAttr);
+    ShaderProgram->disableAttributeArray(colorAttr);
 
     Buffer->release();
     VertexArray->release();

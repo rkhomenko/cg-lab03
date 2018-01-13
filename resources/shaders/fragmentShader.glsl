@@ -4,8 +4,8 @@
 // All rights reserved
 
 #version 330
-uniform lowp vec4 color;
+varying lowp vec4 vColor;
 
 void main() {
-   gl_FragColor = color;
+   gl_FragColor = vColor;
 }

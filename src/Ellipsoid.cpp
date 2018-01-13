@@ -25,7 +25,8 @@ SizeType Layer::GetItemsCount() const {
 Layer Layer::ApplyMatrix(const Mat4x4& matrix) const {
     Layer layer;
     for (auto&& vertex : Vertices) {
-        layer.Vertices.emplace_back(vertex.GetPosition() * matrix);
+        layer.Vertices.emplace_back(vertex.GetPosition() * matrix,
+                                    vertex.GetColor());
     }
     return layer;
 }
@@ -75,6 +76,8 @@ void Layer::GenerateVertices(LenghtType a,
         return false;
     };
 
+    const auto BLUE = Vec4(0, 0, 1, 1);
+
     for (auto i = 0UL; i < n; i++) {
         auto first = generateVertex(i, h).GetPosition() * transformMatrix;
         auto second =
@@ -84,15 +87,15 @@ void Layer::GenerateVertices(LenghtType a,
             generateVertex(i + 1, h + deltaH).GetPosition() * transformMatrix;
 
         if (checkNormal(getNormal(first, second, third), viewPoint)) {
-            Vertices.emplace_back(first);
-            Vertices.emplace_back(second);
-            Vertices.emplace_back(third);
+            Vertices.emplace_back(first, BLUE);
+            Vertices.emplace_back(second, BLUE);
+            Vertices.emplace_back(third, BLUE);
         }
 
         if (checkNormal(getNormal(second, fourth, third), viewPoint)) {
-            Vertices.emplace_back(second);
-            Vertices.emplace_back(third);
-            Vertices.emplace_back(fourth);
+            Vertices.emplace_back(second, BLUE);
+            Vertices.emplace_back(third, BLUE);
+            Vertices.emplace_back(fourth, BLUE);
         }
     }
 }
@@ -110,7 +113,7 @@ LayerVector Ellipsoid::GenerateVertices(const Mat4x4& rotateMatrix,
     LayerVector layers;
     float start = -0.1f;
     float stop = 0.1f;
-    float delta = stop - start / DeltaH;
+    float delta = (stop - start) / DeltaH;
     for (auto h = start; h <= stop; h += delta) {
         auto layer = Layer(A, B, C, h, N, delta, rotateMatrix, ViewPoint);
         if (layer.GetItemsCount() != 0) {

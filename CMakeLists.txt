@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
-project(cg-lab02 VERSION 0.1.0 LANGUAGES CXX)
+project(cg-lab03 VERSION 0.1.0 LANGUAGES CXX)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -35,6 +35,8 @@ include_directories(${Qt5Widgets_INCLUDE_DIRS})
 qt5_add_resources(RESOURCES ${RESOURCES_FILE})
 qt5_wrap_ui(UI_INCLUDES ${UI_FILE})
 
+find_package(OpenGL REQUIRED)
+
 if(EIGEN3_INCLUDE_DIR)
     add_definitions(-DEIGEN3_INCLUDE_DIR)
     include_directories(${EIGEN3_INCLUDE_DIR})
@@ -44,4 +46,4 @@ add_executable(${PROJECT_NAME} ${INCLUDES} ${UI_INCLUDES}
                                ${SOURCES}
                                ${RESOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
-target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
+target_link_libraries(${PROJECT_NAME} Qt5::Widgets ${OPENGL_LIBRARIES})

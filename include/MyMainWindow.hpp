@@ -1,4 +1,4 @@
-// Computer graphic lab 2
+// Computer graphic lab 3
 // Variant 20
 // Copyright © 2017-2018 Roman Khomenko (8O-308)
 // All rights reserved
@@ -17,18 +17,17 @@ class MyMainWindow : public QMainWindow {
 
 public:
     explicit MyMainWindow(QWidget* parent = nullptr);
-    ~MyMainWindow();
+    ~MyMainWindow() = default;
 
     static constexpr auto VARIANT_DESCRIPTION =
-        "Computer grapics lab 2\n"
-        "Variant 20: octagonal truncated pyramid\n"
+        "Computer grapics lab 3\n"
+        "Variant 20: ellipsoid layer\n"
         "Made by Roman Khomenko (8O-308)";
 
 private:
     QWidget* CreateCentralWidget();
 
-    std::array<MyOpenGLWidget*, 3> OrthoOpenGLWidgets;
-    std::array<MyOpenGLWidget*, 4> IsoOpenGLWidgets;
+    MyOpenGLWidget* OpenGLWidget;
 };
 
 #endif  // CG_LAB_MYMAINWINDOW_HPP_

@@ -1,11 +1,11 @@
-// Computer graphic lab 2
+// Computer graphic lab 3
 // Variant 20
 // Copyright © 2017-2018 Roman Khomenko (8O-308)
 // All rights reserved
 
+#include <Ellipsoid.hpp>
 #include <MyMainWindow.hpp>
 #include <MyOpenGLWidget.hpp>
-#include <Pyramid.hpp>
 
 #include <cmath>
 
@@ -17,45 +17,32 @@
 #include <QOpenGLVertexArrayObject>
 #include <QResizeEvent>
 
-using namespace Eigen;
-
-using Map4x4 = Map<Matrix<float, 4, 4, RowMajor>>;
+const Vec3 MyOpenGLWidget::VIEW_POINT = Vec3(0, 0, 1);
 
 MyOpenGLWidget::MyOpenGLWidget(QWidget* parent)
-    : MyOpenGLWidget(ProjectionType::NO_PROJECTION,
-                     ProjectionSurface::NO_SURFACE,
-                     Vec4(0, 0, 0, 0),
-                     parent) {}
+    : MyOpenGLWidget(0.5, 0.5, 0.5, 0.2, 5, parent) {}
 
-MyOpenGLWidget::MyOpenGLWidget(ProjectionType projType,
-                               ProjectionSurface projSurface,
-                               const Vec4& viewPoint,
+MyOpenGLWidget::MyOpenGLWidget(LenghtType a,
+                               LenghtType b,
+                               LenghtType c,
+                               LenghtType deltaH,
+                               SizeType n,
                                QWidget* parent)
     : QOpenGLWidget(parent),
-      Pyramid8Faces{8, 0.6f, 0.3f, 0.9f},
-      ScaleFactor{1.0f},
-      AngleOX{0},
-      AngleOY{0},
-      AngleOZ{0},
-      ProjType{projType},
-      ProjSurface{projSurface},
-      IsoProjType{IsometricProjType::NO_TYPE},
-      ViewPoint{viewPoint} {
+      EllipsoidLayer{a, b, c, deltaH, n, VIEW_POINT},
+      ScaleFactor{3.0f},
+      AngleOX{0.0},
+      AngleOY{0.0},
+      AngleOZ{0.0},
+      A{a},
+      B{b},
+      C{c},
+      DeltaH{deltaH},
+      N{n} {
     auto sizePolicy =
         QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setSizePolicy(sizePolicy);
     setMinimumSize(WIDGET_DEFAULT_SIZE);
-}
-
-MyOpenGLWidget::MyOpenGLWidget(ProjectionType projType,
-                               IsometricProjType isoProjType,
-                               const Vec4& viewPoint,
-                               QWidget* parent)
-    : MyOpenGLWidget(projType,
-                     ProjectionSurface::NO_SURFACE,
-                     viewPoint,
-                     parent) {
-    IsoProjType = isoProjType;
 }
 
 void MyOpenGLWidget::ScaleUpSlot() {
@@ -110,14 +97,16 @@ void MyOpenGLWidget::initializeGL() {
     Buffer->bind();
     Buffer->setUsagePattern(QOpenGLBuffer::DynamicDraw);
     UpdateOnChange(width(), height());
-    Buffer->allocate(sizeof(Vertex) * Pyramid8Faces.GetVerticesCount());
+    Buffer->allocate(GetVertexCount(Layers) * sizeof(Vertex));
 
-    int offset = 0;
-    for (auto&& surface : Surfaces) {
-        auto& vertices = surface.GetVertices();
-        auto bytes = vertices.size() * sizeof(Vertex);
-        Buffer->write(offset, vertices.data(), bytes);
-        offset += bytes;
+    {
+        int offset = 0;
+        for (auto&& layer : Layers) {
+            auto& vertices = layer.GetVertices();
+            auto bytes = vertices.size() * sizeof(Vertex);
+            Buffer->write(offset, vertices.data(), bytes);
+            offset += bytes;
+        }
     }
 
     VertexArray = new QOpenGLVertexArrayObject;
@@ -150,28 +139,45 @@ void MyOpenGLWidget::paintGL() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    Buffer->bind();
+    Buffer->destroy();
+    if (!Buffer->create()) {
+        qDebug() << "Cannot create buffer";
+    }
+
+    if (!Buffer->bind()) {
+        qDebug() << "Cannot bind buffer";
+    }
+    Buffer->setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    Buffer->allocate(GetVertexCount(Layers) * sizeof(Vertex));
     {
         int offset = 0;
-        for (auto&& surface : Surfaces) {
-            auto& vertices = surface.GetVertices();
+        for (auto&& layer : Layers) {
+            auto& vertices = layer.GetVertices();
             auto bytes = vertices.size() * sizeof(Vertex);
             Buffer->write(offset, vertices.data(), bytes);
             offset += bytes;
         }
     }
-    Buffer->release();
 
+    VertexArray->destroy();
+    VertexArray->create();
     VertexArray->bind();
+    int posAttr = ShaderProgram->attributeLocation(POSITION);
+    ShaderProgram->enableAttributeArray(posAttr);
+    ShaderProgram->setAttributeBuffer(posAttr, GL_FLOAT, Vertex::GetOffset(),
+                                      Vertex::GetTupleSize(),
+                                      Vertex::GetStride());
     {
         int offset = 0;
-        for (auto&& surface : Surfaces) {
-            int count = surface.GetVerticesCount();
-            glDrawArrays(GL_LINE_LOOP, offset, count);
+        for (auto&& layer : Layers) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            int count = layer.GetItemsCount();
+            glDrawArrays(GL_TRIANGLES, offset, count);
             offset += count;
         }
     }
 
+    Buffer->release();
     VertexArray->release();
     ShaderProgram->release();
 }
@@ -184,23 +190,23 @@ void MyOpenGLWidget::CleanUp() {
     delete ShaderProgram;
 }
 
+SizeType MyOpenGLWidget::GetVertexCount(const LayerVector& layers) {
+    SizeType result = 0;
+    for (auto&& layer : layers) {
+        result += layer.GetVertices().size();
+    }
+    return result;
+}
+
 void MyOpenGLWidget::UpdateOnChange(int width, int height) {
-    const Mat4x4 shiftMatrix = GenerateShiftMatrix();
     const Mat4x4 rotateMatrix = GenerateRotateMatrix(RotateType::OX) *
                                 GenerateRotateMatrix(RotateType::OY) *
                                 GenerateRotateMatrix(RotateType::OZ);
-    const Mat4x4 projectionMatrix =
-        GenerateProjectionMatrix(ProjType, ProjSurface, IsoProjType);
-    const Mat4x4 moveToXYMatrix =
-        GenerateMoveToXYMatrix(ProjType, ProjSurface, IsoProjType);
+    const Mat4x4 projectionMatrix = GenerateProjectionMatrix();
     const Mat4x4 scaleMatrix = GenerateScaleMatrix(width, height);
-    const Mat4x4 rotateAndShiftMatrix = shiftMatrix * rotateMatrix;
-    const Mat4x4 projMoveScaleMatrix =
-        projectionMatrix * moveToXYMatrix * scaleMatrix;
+    const Mat4x4 transformMatrix = scaleMatrix * projectionMatrix;
 
-    const auto surfaces = Pyramid8Faces.GenerateVertices(
-        ViewPoint, rotateAndShiftMatrix, projMoveScaleMatrix);
-    Surfaces = surfaces;
+    Layers = EllipsoidLayer.GenerateVertices(rotateMatrix, transformMatrix);
 }
 
 void MyOpenGLWidget::OnWidgetUpdate() {
@@ -251,21 +257,6 @@ Mat4x4 MyOpenGLWidget::GenerateRotateMatrix(RotateType rotateType) const {
             break;
     }
     return GenerateRotateMatrixByAngle(rotateType, angle);
-}
-
-Mat4x4 MyOpenGLWidget::GenerateShiftMatrix() const {
-    FloatType matrixData[] = {
-        1, 0, 0,
-        0,  // first line
-        0, 1, 0,
-        0,  // second line
-        0, 0, 1,
-        0,  // third line
-        0, 0, -Pyramid8Faces.GetHeight() / 2,
-        1  // fourth
-    };
-
-    return Map4x4(matrixData);
 }
 
 Mat4x4 MyOpenGLWidget::GenerateRotateMatrixByAngle(RotateType rotateType,
@@ -343,140 +334,13 @@ Mat4x4 MyOpenGLWidget::GenerateRotateMatrixByAngle(RotateType rotateType,
     return Map4x4(matrixData);
 }
 
-Mat4x4 MyOpenGLWidget::GenerateProjectionMatrix(ProjectionType projType,
-                                                ProjectionSurface projSurface,
-                                                IsometricProjType isoProjType) {
-    const auto X_COORD = 0;
-    const auto Y_COORD = 1;
-    const auto Z_COORD = 2;
-    FloatType eMatrixData[] = {
+Mat4x4 MyOpenGLWidget::GenerateProjectionMatrix() {
+    FloatType matrixData[] = {
         1, 0, 0, 0,  // first line
         0, 1, 0, 0,  // second line
-        0, 0, 1, 0,  // third line
+        0, 0, 0, 0,  // third line
         0, 0, 0, 1   // fourth line
     };
 
-    const auto PHI = std::asin(std::sqrt(2.0f) / 2);
-    const auto TETA = std::asin(std::sqrt(1.0f / 3));
-
-    auto generateIsoProjMatrix = [](float phi, float teta) -> Mat4x4 {
-        float isoProjMatrixData[] = {
-            std::cos(phi),
-            std::sin(phi) * std::sin(teta),
-            0,
-            0,  // first line
-            0,
-            std::cos(teta),
-            0,
-            0,  // second line
-            std::sin(phi),
-            -std::cos(phi) * std::sin(teta),
-            0,
-            0,  // third line
-            0,
-            0,
-            0,
-            1  // fourth line
-        };
-        return Map4x4(isoProjMatrixData);
-    };
-
-    float phi = 0;
-    float teta = 0;
-    Mat4x4 projectionMatrix;
-    switch (projType) {
-        case ProjectionType::ORTHOGRAPHIC:
-            projectionMatrix = Map4x4(eMatrixData);
-            switch (projSurface) {
-                case ProjectionSurface::X:
-                    projectionMatrix(X_COORD, X_COORD) = 0;
-                    break;
-                case ProjectionSurface::Y:
-                    projectionMatrix(Y_COORD, Y_COORD) = 0;
-                    break;
-                case ProjectionSurface::Z:
-                    projectionMatrix(Z_COORD, Z_COORD) = 0;
-                    break;
-                case ProjectionSurface::NO_SURFACE:
-                    break;
-            }
-            break;
-        case ProjectionType::ISOMETRIC:
-            switch (isoProjType) {
-                case IsometricProjType::M_PHI_M_TETA:
-                    phi = -PHI;
-                    teta = -TETA;
-                    break;
-                case IsometricProjType::M_PHI_P_TETA:
-                    phi = -PHI;
-                    teta = TETA;
-                    break;
-                case IsometricProjType::P_PHI_M_TETA:
-                    phi = PHI;
-                    teta = -TETA;
-                    break;
-                case IsometricProjType::P_PHI_P_TETA:
-                    phi = PHI;
-                    teta = TETA;
-                    break;
-                case IsometricProjType::NO_TYPE:
-                    break;
-            }
-            projectionMatrix = generateIsoProjMatrix(phi, teta);
-            break;
-        case ProjectionType::NO_PROJECTION:
-            break;
-    }
-
-    return projectionMatrix;
-}
-
-Mat4x4 MyOpenGLWidget::GenerateMoveToXYMatrix(ProjectionType projType,
-                                              ProjectionSurface projSurface,
-                                              IsometricProjType isoProjType) {
-    const auto PI = 4 * std::atan(1.0f);
-    FloatType eData[] = {
-        1, 0, 0, 0,  // first line
-        0, 1, 0, 0,  // second line
-        0, 0, 1, 0,  // third line
-        0, 0, 0, 1   // fourth line
-    };
-    const Mat4x4 E = Map4x4(eData);
-
-    Mat4x4 moveToXYMatrix;
-    switch (projType) {
-        case ProjectionType::ORTHOGRAPHIC:
-            switch (projSurface) {
-                case ProjectionSurface::X:
-                    moveToXYMatrix =
-                        GenerateRotateMatrixByAngle(RotateType::OY, -PI / 2);
-                    break;
-                case ProjectionSurface::Y:
-                    moveToXYMatrix =
-                        GenerateRotateMatrixByAngle(RotateType::OX, -PI / 2);
-                    break;
-                case ProjectionSurface::Z:
-                    moveToXYMatrix = E;
-                    break;
-                case ProjectionSurface::NO_SURFACE:
-                    break;
-            }
-            break;
-        case ProjectionType::ISOMETRIC:
-            switch (isoProjType) {
-                case IsometricProjType::M_PHI_M_TETA:
-                case IsometricProjType::M_PHI_P_TETA:
-                case IsometricProjType::P_PHI_M_TETA:
-                case IsometricProjType::P_PHI_P_TETA:
-                    moveToXYMatrix = E;
-                    break;
-                case IsometricProjType::NO_TYPE:
-                    break;
-            }
-            break;
-        case ProjectionType::NO_PROJECTION:
-            break;
-    }
-
-    return moveToXYMatrix;
+    return Map4x4(matrixData);
 }

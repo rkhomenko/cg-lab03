@@ -1,4 +1,4 @@
-// Computer graphic lab 2
+// Computer graphic lab 3
 // Variant 20
 // Copyright © 2017-2018 Roman Khomenko (8O-308)
 // All rights reserved
@@ -21,37 +21,10 @@ MyMainWindow::MyMainWindow(QWidget* parent) : QMainWindow(parent) {
     format.setVersion(3, 3);
     format.setProfile(QSurfaceFormat::CoreProfile);
 
-    const Vec4 orthoViewPoints[] = {Vec4{1, 0, 0, 1}, Vec4{0, 1, 0, 1},
-                                    Vec4{0, 0, 1, 1}};
-    auto i = 0UL;
-    for (auto projSurface : MyOpenGLWidget::GetProjectionSurfaces()) {
-        OrthoOpenGLWidgets[i] =
-            new MyOpenGLWidget(MyOpenGLWidget::ProjectionType::ORTHOGRAPHIC,
-                               projSurface, orthoViewPoints[i]);
-        OrthoOpenGLWidgets[i++]->setFormat(format);
-    }
-
-    const Vec4 isoViewPoints[] = {Vec4{1, -1, 1, 1}, Vec4{1, 1, 1, 1},
-                                  Vec4{1, 1, -1, 1}, Vec4{1, -1, -1, 1}};
-    i = 0UL;
-    for (auto isoProjType : MyOpenGLWidget::GetIsoProjTypes()) {
-        IsoOpenGLWidgets[i] =
-            new MyOpenGLWidget(MyOpenGLWidget::ProjectionType ::ISOMETRIC,
-                               isoProjType, isoViewPoints[i]);
-        IsoOpenGLWidgets[i]->setFormat(format);
-        i++;
-    }
+    OpenGLWidget = new MyOpenGLWidget(0.8, 0.3, 0.4, 10, 16);
+    OpenGLWidget->setFormat(format);
 
     setCentralWidget(CreateCentralWidget());
-}
-
-MyMainWindow::~MyMainWindow() {
-    for (auto ptr : OrthoOpenGLWidgets) {
-        delete ptr;
-    }
-    for (auto ptr : IsoOpenGLWidgets) {
-        delete ptr;
-    }
 }
 
 QWidget* MyMainWindow::CreateCentralWidget() {
@@ -60,72 +33,31 @@ QWidget* MyMainWindow::CreateCentralWidget() {
 
     auto widget = new QWidget;
     auto mainLayout = new QVBoxLayout;
-    auto tabWidget = new QTabWidget;
+    auto controlWidget = new MyControlWidget;
+    auto toolLayout = new QHBoxLayout;
+    auto label = new QLabel(VARIANT_DESCRIPTION);
 
-    auto initWidget = [this](auto controlWidget, auto openGLWidget) {
-        // set connection for redraw on scale changed
-        connect(controlWidget, &MyControlWidget::ScaleUpSignal, openGLWidget,
-                &MyOpenGLWidget::ScaleUpSlot);
-        connect(controlWidget, &MyControlWidget::ScaleDownSignal, openGLWidget,
-                &MyOpenGLWidget::ScaleDownSlot);
+    label->setSizePolicy(fixedSizePolicy);
+    toolLayout->addWidget(controlWidget);
+    toolLayout->addWidget(label);
+    toolLayout->addStretch();
 
-        // set connection for redraw on angle changed
-        connect(controlWidget, &MyControlWidget::OXAngleChangedSignal,
-                openGLWidget, &MyOpenGLWidget::OXAngleChangedSlot);
-        connect(controlWidget, &MyControlWidget::OYAngleChangedSignal,
-                openGLWidget, &MyOpenGLWidget::OYAngleChangedSlot);
-        connect(controlWidget, &MyControlWidget::OZAngleChangedSignal,
-                openGLWidget, &MyOpenGLWidget::OZAngleChangedSlot);
-    };
+    // set connection for redraw on scale changed
+    connect(controlWidget, &MyControlWidget::ScaleUpSignal, OpenGLWidget,
+            &MyOpenGLWidget::ScaleUpSlot);
+    connect(controlWidget, &MyControlWidget::ScaleDownSignal, OpenGLWidget,
+            &MyOpenGLWidget::ScaleDownSlot);
 
-    auto createTab = [&](auto tabWidget, auto tabName, auto openGLWidgets,
-                         auto widgetInfoStr) {
-        auto tabLayout = new QVBoxLayout;
-        auto controlWidget = new MyControlWidget;
+    // set connection for redraw on angle changed
+    connect(controlWidget, &MyControlWidget::OXAngleChangedSignal, OpenGLWidget,
+            &MyOpenGLWidget::OXAngleChangedSlot);
+    connect(controlWidget, &MyControlWidget::OYAngleChangedSignal, OpenGLWidget,
+            &MyOpenGLWidget::OYAngleChangedSlot);
+    connect(controlWidget, &MyControlWidget::OZAngleChangedSignal, OpenGLWidget,
+            &MyOpenGLWidget::OZAngleChangedSlot);
 
-        auto controlWidgetLayout = new QHBoxLayout;
-        auto label = new QLabel(VARIANT_DESCRIPTION);
-        label->setSizePolicy(fixedSizePolicy);
-
-        controlWidgetLayout->addWidget(controlWidget);
-        controlWidgetLayout->addWidget(label);
-        controlWidgetLayout->addStretch();
-
-        tabLayout->addLayout(controlWidgetLayout);
-
-        auto openGLWidgetsLayout = new QHBoxLayout;
-        auto i = 0U;
-        for (auto ptr : openGLWidgets) {
-            auto layout = new QVBoxLayout;
-            auto label = new QLabel(widgetInfoStr[i++]);
-            label->setSizePolicy(fixedSizePolicy);
-
-            layout->addWidget(label);
-            layout->addWidget(ptr);
-            openGLWidgetsLayout->addLayout(layout);
-
-            initWidget(controlWidget, ptr);
-        }
-
-        tabLayout->addLayout(openGLWidgetsLayout);
-
-        auto tabCentralWidget = new QWidget;
-        tabCentralWidget->setLayout(tabLayout);
-
-        tabWidget->addTab(tabCentralWidget, tabName);
-    };
-
-    std::vector<const char*> orthoInfoStrs = {"x = 0 (YZ)", "y = 0 (XZ)",
-                                              "z = 0 (XY)"};
-    std::vector<const char*> isoInfoStrs = {"ϕ < 0,  θ < 0", "ϕ < 0, θ > 0",
-                                            "ϕ > 0, θ < 0", "ϕ > 0, θ > 0"};
-
-    createTab(tabWidget, "Orthographic projections", OrthoOpenGLWidgets,
-              orthoInfoStrs);
-    createTab(tabWidget, "Isometric Projections", IsoOpenGLWidgets,
-              isoInfoStrs);
-
-    mainLayout->addWidget(tabWidget);
+    mainLayout->addLayout(toolLayout);
+    mainLayout->addWidget(OpenGLWidget);
     widget->setLayout(mainLayout);
 
     return widget;

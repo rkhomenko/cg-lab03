@@ -1,4 +1,4 @@
-// Computer graphic lab 2
+// Computer graphic lab 3
 // Variant 20
 // Copyright © 2017-2018 Roman Khomenko (8O-308)
 // All rights reserved
@@ -6,7 +6,7 @@
 #ifndef CG_LAB_MYOPENGLWIDGET_HPP_
 #define CG_LAB_MYOPENGLWIDGET_HPP_
 
-#include <Pyramid.hpp>
+#include <Ellipsoid.hpp>
 
 #include <array>
 
@@ -22,43 +22,14 @@ class MyOpenGLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 
 public:
     using FloatType = float;
-    enum class ProjectionType { ORTHOGRAPHIC, ISOMETRIC, NO_PROJECTION };
-    enum class ProjectionSurface : int { X, Y, Z, NO_SURFACE };
-    enum class IsometricProjType {
-        M_PHI_M_TETA,
-        M_PHI_P_TETA,
-        P_PHI_M_TETA,
-        P_PHI_P_TETA,
-        NO_TYPE
-    };
 
     explicit MyOpenGLWidget(QWidget* parent = nullptr);
-    explicit MyOpenGLWidget(ProjectionType projType,
-                            ProjectionSurface projSurface,
-                            const Vec4& viewPoint,
+    explicit MyOpenGLWidget(LenghtType a,
+                            LenghtType b,
+                            LenghtType c,
+                            LenghtType deltaH,
+                            SizeType n,
                             QWidget* parent = nullptr);
-    explicit MyOpenGLWidget(ProjectionType projType,
-                            IsometricProjType isoProjType,
-                            const Vec4& viewPoint,
-                            QWidget* parent = nullptr);
-
-    static constexpr std::array<ProjectionType, 2>
-    GetProjectionTypes() noexcept {
-        return {ProjectionType::ORTHOGRAPHIC, ProjectionType::ISOMETRIC};
-    }
-
-    static constexpr std::array<IsometricProjType, 4>
-    GetIsoProjTypes() noexcept {
-        return {
-            IsometricProjType::M_PHI_M_TETA, IsometricProjType::M_PHI_P_TETA,
-            IsometricProjType::P_PHI_M_TETA, IsometricProjType::P_PHI_P_TETA};
-    }
-
-    static constexpr std::array<ProjectionSurface, 3>
-    GetProjectionSurfaces() noexcept {
-        return {ProjectionSurface::X, ProjectionSurface::Y,
-                ProjectionSurface::Z};
-    }
 
 public slots:
     void ScaleUpSlot();
@@ -79,8 +50,9 @@ private slots:
 private:
     enum RotateType { OX, OY, OZ };
 
-    static constexpr auto WIDGET_DEFAULT_SIZE = QSize(200, 200);
+    static constexpr auto WIDGET_DEFAULT_SIZE = QSize(500, 500);
     static constexpr auto IMAGE_DEFAULT_SIZE = QSize(300, 300);
+    static const Vec3 VIEW_POINT;
 
     static constexpr auto VERTEX_SHADER = ":/shaders/vertexShader.glsl";
     static constexpr auto FRAGMENT_SHADER = ":/shaders/fragmentShader.glsl";
@@ -89,35 +61,32 @@ private:
 
     static constexpr auto SCALE_FACTOR_PER_ONCE = 1.15f;
 
+    static SizeType GetVertexCount(const LayerVector& layers);
+
     void UpdateOnChange(int width, int height);
     void OnWidgetUpdate();
 
     Mat4x4 GenerateScaleMatrix(int width, int height) const;
     Mat4x4 GenerateRotateMatrix(RotateType rotateType) const;
-    Mat4x4 GenerateShiftMatrix() const;
 
     static Mat4x4 GenerateRotateMatrixByAngle(RotateType rotateType,
-                                                  FloatType angle);
-    static Mat4x4 GenerateProjectionMatrix(ProjectionType projType,
-                                               ProjectionSurface projSurface,
-                                               IsometricProjType isoProjType);
-    static Mat4x4 GenerateMoveToXYMatrix(ProjectionType projType,
-                                             ProjectionSurface projSurface,
-                                             IsometricProjType isoProjType);
+                                              FloatType angle);
+    static Mat4x4 GenerateProjectionMatrix();
 
     QOpenGLShaderProgram* ShaderProgram;
     QOpenGLBuffer* Buffer;
     QOpenGLVertexArrayObject* VertexArray;
-    Pyramid Pyramid8Faces;
+    Ellipsoid EllipsoidLayer;
     FloatType ScaleFactor;
     FloatType AngleOX;
     FloatType AngleOY;
     FloatType AngleOZ;
-    ProjectionType ProjType;
-    ProjectionSurface ProjSurface;
-    IsometricProjType IsoProjType;
-    Vec4 ViewPoint;
-    Pyramid::SurfaceVector Surfaces;
+    FloatType A;
+    FloatType B;
+    FloatType C;
+    FloatType DeltaH;
+    SizeType N;
+    LayerVector Layers;
 };
 
 #endif  // CG_LAB_MYOPENGLWIDGET_HPP_

@@ -1,4 +1,4 @@
-// Computer graphic lab 2
+// Computer graphic lab 3
 // Variant 20
 // Copyright © 2017-2018 Roman Khomenko (8O-308)
 // All rights reserved
@@ -11,7 +11,6 @@
 #else
 #include <eigen3/Eigen/Dense>
 #endif
-
 
 template <typename T, typename U>
 constexpr size_t offsetofImpl(T const* t, U T::*a) {

@@ -54,6 +54,8 @@ private:
 
 class Layer {
 public:
+    enum class LayerType { SIDE, BOTTOM };
+
     Layer() = default;
     Layer(LenghtType a,
           LenghtType b,
@@ -64,12 +66,23 @@ public:
           const Mat4x4& transformMatrix,
           const Vec3& viewPoint,
           const Lighting& lighting);
+    Layer(LenghtType a,
+          LenghtType b,
+          LenghtType c,
+          LenghtType h,
+          SizeType n,
+          const Mat4x4& transformMatrix,
+          const Vec3& viewPoint,
+          const Lighting& lighting);
 
     const VertexVector& GetVertices() const;
     SizeType GetItemsCount() const;
     Layer ApplyMatrix(const Mat4x4& matrix) const;
+    LayerType GetType() const { return Type; }
 
 private:
+    static const float PI;
+
     void GenerateVertices(LenghtType a,
                           LenghtType b,
                           LenghtType c,
@@ -79,8 +92,23 @@ private:
                           const Mat4x4& transformMatrix,
                           const Vec3& viewPoint,
                           const Lighting& lighting);
+    void GenerateVertices(LenghtType a,
+                          LenghtType b,
+                          LenghtType c,
+                          LenghtType h,
+                          SizeType n,
+                          const Mat4x4& transformMatrix,
+                          const Vec3& viewPoint,
+                          const Lighting& lighting);
+
+    static Vec3 ToVec3(const Vec4& vec) { return Vec3(vec[0], vec[1], vec[2]); }
+    static Vec3 GetNormal(const Vec4& first,
+                          const Vec4& middle,
+                          const Vec4& last);
+    static bool CheckNormal(const Vec3& normal, const Vec3& viewPoint);
 
     VertexVector Vertices;
+    LayerType Type;
 };
 
 using LayerVector = std::vector<Layer>;

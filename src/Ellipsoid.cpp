@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+const float Layer::PI = 4 * std::atan(1.0f);
+
 Vec4 Lighting::Calculate(const Vec3& point,
                          const Vec3& normal,
                          const Vec3& color) const {
@@ -29,9 +31,22 @@ Layer::Layer(LenghtType a,
              LenghtType deltaH,
              const Mat4x4& transformMatrix,
              const Vec3& viewPoint,
-             const Lighting& lighting) {
+             const Lighting& lighting)
+    : Type{LayerType::SIDE} {
     GenerateVertices(a, b, c, h, n, deltaH, transformMatrix, viewPoint,
                      lighting);
+}
+
+Layer::Layer(LenghtType a,
+             LenghtType b,
+             LenghtType c,
+             LenghtType h,
+             SizeType n,
+             const Mat4x4& transformMatrix,
+             const Vec3& viewPoint,
+             const Lighting& lighting)
+    : Type{LayerType::BOTTOM} {
+    GenerateVertices(a, b, c, h, n, transformMatrix, viewPoint, lighting);
 }
 
 const VertexVector& Layer::GetVertices() const {
@@ -60,7 +75,6 @@ void Layer::GenerateVertices(LenghtType a,
                              const Mat4x4& transformMatrix,
                              const Vec3& viewPoint,
                              const Lighting& lighting) {
-    const auto PI = 4 * std::atan(1.0f);
     const auto DELTA_PHI = 2 * PI / n;
 
     auto generateVertex = [a, b, c, DELTA_PHI](auto&& i, auto&& h) {
@@ -69,35 +83,6 @@ void Layer::GenerateVertices(LenghtType a,
         const auto B = std::sqrt(C) * b;
         return Vertex(A * std::cos(i * DELTA_PHI), B * std::sin(i * DELTA_PHI),
                       h);
-    };
-
-    auto toVec3 = [](auto&& vec4) { return Vec3(vec4[0], vec4[1], vec4[2]); };
-    auto toVec4 = [](auto&& vec3) {
-        return Vec4(vec3[0], vec3[1], vec3[2], 1);
-    };
-
-    auto getNormal = [toVec3](Vec4&& first, Vec4&& middle, Vec4&& last) {
-        const auto center = Vec3(0, 0, 0);
-        auto v1 = toVec3(middle - first);
-        auto v2 = toVec3(last - first);
-
-        Vec3 normal = v1.cross(v2);
-        normal.normalize();
-
-        if (Vec3 toCenterVec = center - toVec3(middle);
-            toCenterVec.dot(normal) > 0) {
-            normal *= -1.0f;
-        }
-
-        return normal;
-    };
-
-    auto checkNormal = [](auto&& normal, auto&& viewPoint) {
-        float dotProduct = viewPoint.dot(normal);
-        if (dotProduct > 0) {
-            return true;
-        }
-        return false;
     };
 
     const auto BLUE = Vec4(0, 0, 1, 1);
@@ -111,32 +96,97 @@ void Layer::GenerateVertices(LenghtType a,
         auto fourth =
             generateVertex(i + 1, h + deltaH).GetPosition() * transformMatrix;
 
-        Vec3 normal = getNormal(first, second, third);
-        if (checkNormal(normal, viewPoint)) {
+        Vec3 normal = GetNormal(first, second, third);
+        if (CheckNormal(normal, viewPoint)) {
             Vertices.emplace_back(
-                first, lighting.Calculate(toVec3(first), toVec3(normal),
-                                          toVec3(color)));
+                first,
+                lighting.Calculate(ToVec3(first), normal, ToVec3(color)));
             Vertices.emplace_back(
-                second, lighting.Calculate(toVec3(second), toVec3(normal),
-                                           toVec3(color)));
+                second,
+                lighting.Calculate(ToVec3(second), normal, ToVec3(color)));
             Vertices.emplace_back(
-                third, lighting.Calculate(toVec3(third), toVec3(normal),
-                                          toVec3(color)));
+                third,
+                lighting.Calculate(ToVec3(third), normal, ToVec3(color)));
         }
 
-        normal = getNormal(second, fourth, third);
-        if (checkNormal(normal, viewPoint)) {
+        normal = GetNormal(second, fourth, third);
+        if (CheckNormal(normal, viewPoint)) {
             Vertices.emplace_back(
-                second, lighting.Calculate(toVec3(second), toVec3(normal),
-                                           toVec3(color)));
+                second,
+                lighting.Calculate(ToVec3(second), normal, ToVec3(color)));
             Vertices.emplace_back(
-                fourth, lighting.Calculate(toVec3(fourth), toVec3(normal),
-                                           toVec3(color)));
+                fourth,
+                lighting.Calculate(ToVec3(fourth), normal, ToVec3(color)));
             Vertices.emplace_back(
-                third, lighting.Calculate(toVec3(third), toVec3(normal),
-                                          toVec3(color)));
+                third,
+                lighting.Calculate(ToVec3(third), normal, ToVec3(color)));
         }
     }
+}
+
+void Layer::GenerateVertices(LenghtType a,
+                             LenghtType b,
+                             LenghtType c,
+                             LenghtType h,
+                             SizeType n,
+                             const Mat4x4& transformMatrix,
+                             const Vec3& viewPoint,
+                             const Lighting& lighting) {
+    const auto DELTA_PHI = 2 * PI / n;
+
+    auto generateVertex = [a, b, c, DELTA_PHI](auto&& i, auto&& h) {
+        const auto C = (c * c - h * h) / c * c;
+        const auto A = std::sqrt(C) * a;
+        const auto B = std::sqrt(C) * b;
+        return Vertex(A * std::cos(i * DELTA_PHI), B * std::sin(i * DELTA_PHI),
+                      h);
+    };
+
+    const auto BLUE = Vec4(0, 0, 1, 1);
+    const Vec4 center = Vec4(0, 0, h, 1) * transformMatrix;
+    auto color = BLUE;
+
+    for (auto i = 0UL; i < n; i++) {
+        auto first = generateVertex(i, h).GetPosition() * transformMatrix;
+        auto second = generateVertex(i + 1, h).GetPosition() * transformMatrix;
+
+        Vec3 normal = GetNormal(first, center, second);
+        if (CheckNormal(normal, viewPoint)) {
+            Vertices.emplace_back(
+                first,
+                lighting.Calculate(ToVec3(first), normal, ToVec3(color)));
+            Vertices.emplace_back(
+                center,
+                lighting.Calculate(ToVec3(center), normal, ToVec3(color)));
+            Vertices.emplace_back(
+                second,
+                lighting.Calculate(ToVec3(second), normal, ToVec3(color)));
+        }
+    }
+}
+
+Vec3 Layer::GetNormal(const Vec4& first, const Vec4& middle, const Vec4& last) {
+    const auto center = Vec3(0, 0, 0);
+    auto v1 = ToVec3(middle - first);
+    auto v2 = ToVec3(last - first);
+
+    Vec3 normal = v1.cross(v2);
+    normal.normalize();
+
+    if (Vec3 toCenterVec = center - ToVec3(middle);
+        toCenterVec.dot(normal) > 0) {
+        normal *= -1.0f;
+    }
+
+    return normal;
+}
+
+bool Layer::CheckNormal(const Vec3& normal, const Vec3& viewPoint) {
+    float dotProduct = viewPoint.dot(normal);
+    if (dotProduct > 0) {
+        return true;
+    }
+    return false;
 }
 
 Ellipsoid::Ellipsoid(LenghtType a,
@@ -154,9 +204,16 @@ LayerVector Ellipsoid::GenerateVertices(const Mat4x4& rotateMatrix,
     float start = -0.2f;
     float stop = 0.2f;
     float delta = (stop - start) / DeltaH;
-    for (auto h = start; h <= stop; h += delta) {
+    auto height = start;
+    for (height = start; height <= stop; height += delta) {
         auto layer =
-            Layer(A, B, C, h, N, delta, rotateMatrix, ViewPoint, lighting);
+            Layer(A, B, C, height, N, delta, rotateMatrix, ViewPoint, lighting);
+        if (layer.GetItemsCount() != 0) {
+            layers.emplace_back(layer);
+        }
+    }
+    for (auto h : {start, height}) {
+        auto layer = Layer(A, B, C, h, N, rotateMatrix, ViewPoint, lighting);
         if (layer.GetItemsCount() != 0) {
             layers.emplace_back(layer);
         }

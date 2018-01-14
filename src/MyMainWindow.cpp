@@ -21,7 +21,7 @@ MyMainWindow::MyMainWindow(QWidget* parent) : QMainWindow(parent) {
     format.setVersion(3, 3);
     format.setProfile(QSurfaceFormat::CoreProfile);
 
-    OpenGLWidget = new MyOpenGLWidget(0.8, 0.3, 0.4, 30, 20);
+    OpenGLWidget = new MyOpenGLWidget(0.8, 0.3, 0.4, 20, 60);
     OpenGLWidget->setFormat(format);
 
     setCentralWidget(CreateCentralWidget());

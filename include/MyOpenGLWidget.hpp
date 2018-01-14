@@ -57,7 +57,7 @@ private slots:
 private:
     enum RotateType { OX, OY, OZ };
 
-    static constexpr auto WIDGET_DEFAULT_SIZE = QSize(500, 500);
+    static constexpr auto WIDGET_DEFAULT_SIZE = QSize(350, 350);
     static constexpr auto IMAGE_DEFAULT_SIZE = QSize(300, 300);
     static const Vec3 VIEW_POINT;
 

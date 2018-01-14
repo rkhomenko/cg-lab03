@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <future>
+#include <vector>
 
 const float Layer::PI = 4 * std::atan(1.0f);
 
@@ -210,13 +212,30 @@ LayerVector Ellipsoid::GenerateVertices(const Mat4x4& rotateMatrix,
     float stop = 0.1f;
     float delta = (stop - start) / SurfaceCount;
     auto height = start;
+
+    std::vector<std::future<Layer>> futures;
+
     for (height = start; height <= stop; height += delta) {
-        auto layer = Layer(A, B, C, height, VertexCount, delta, rotateMatrix,
-                           ViewPoint, lighting);
+        futures.emplace_back(std::async(
+            std::launch::async,
+            [](float a, float b, float c, float height, SizeType vertexCount,
+               float delta, const Mat4x4& transformMatrix,
+               const Vec3& viewPoint, const Lighting& lighting) {
+                return Layer(a, b, c, height, vertexCount, delta,
+                             transformMatrix, viewPoint, lighting);
+            },
+            A, B, C, height, VertexCount, delta, rotateMatrix, ViewPoint,
+            lighting));
+    }
+
+    for (auto&& future : futures) {
+        future.wait();
+        auto layer = future.get();
         if (layer.GetItemsCount() != 0) {
             layers.emplace_back(layer);
         }
     }
+
     for (auto h : {start, height}) {
         auto layer =
             Layer(A, B, C, h, VertexCount, rotateMatrix, ViewPoint, lighting);

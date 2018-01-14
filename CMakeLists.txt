@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
-project(cg-lab03 VERSION 0.1.0 LANGUAGES CXX)
+project(cg-lab03 VERSION 0.1.0 LANGUAGES C CXX)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -42,8 +42,14 @@ if(EIGEN3_INCLUDE_DIR)
     include_directories(${EIGEN3_INCLUDE_DIR})
 endif()
 
+# Adding thread library
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads)
+
 add_executable(${PROJECT_NAME} ${INCLUDES} ${UI_INCLUDES}
                                ${SOURCES}
                                ${RESOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
-target_link_libraries(${PROJECT_NAME} Qt5::Widgets ${OPENGL_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} Qt5::Widgets
+                                      Threads::Threads
+                                      ${OPENGL_LIBRARIES})

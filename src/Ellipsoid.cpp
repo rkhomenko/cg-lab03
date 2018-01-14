@@ -205,7 +205,6 @@ Ellipsoid::Ellipsoid(LenghtType a,
       ViewPoint{viewPoint} {}
 
 LayerVector Ellipsoid::GenerateVertices(const Mat4x4& rotateMatrix,
-                                        const Mat4x4& scaleProjMatrix,
                                         const Lighting& lighting) const {
     LayerVector layers;
     float start = -0.1f;
@@ -243,7 +242,7 @@ LayerVector Ellipsoid::GenerateVertices(const Mat4x4& rotateMatrix,
             layers.emplace_back(layer);
         }
     }
-    return ApplyMatrix(layers, scaleProjMatrix);
+    return layers;
 }
 
 void Ellipsoid::SetVertexCount(SizeType count) {

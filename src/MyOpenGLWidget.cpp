@@ -259,8 +259,8 @@ void MyOpenGLWidget::UpdateOnChange(int width, int height) {
                          toObserver};
     EllipsoidLayer.SetVertexCount(VertexCount);
     EllipsoidLayer.SetSurfaceCount(SurfaceCount);
-    Layers = EllipsoidLayer.GenerateVertices(rotateMatrix, transformMatrix,
-                                             lighting);
+    Layers = EllipsoidLayer.GenerateVertices(rotateMatrix, lighting);
+    SetUniformMatrix(transformMatrix);
 }
 
 void MyOpenGLWidget::OnWidgetUpdate() {
@@ -397,4 +397,12 @@ Mat4x4 MyOpenGLWidget::GenerateProjectionMatrix() {
     };
 
     return Map4x4(matrixData);
+}
+
+void MyOpenGLWidget::SetUniformMatrix(const Mat4x4& transformMatrix) {
+    ShaderProgram->bind();
+
+    ShaderProgram->setUniformValue(TRANSFORM_MATRIX,
+                                   QMatrix4x4(transformMatrix.data()));
+    ShaderProgram->release();
 }

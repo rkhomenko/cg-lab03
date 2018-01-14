@@ -65,6 +65,7 @@ private:
     static constexpr auto FRAGMENT_SHADER = ":/shaders/fragmentShader.glsl";
     static constexpr auto POSITION = "position";
     static constexpr auto COLOR = "color";
+    static constexpr auto TRANSFORM_MATRIX = "transformMatrix";
 
     static constexpr auto SCALE_FACTOR_PER_ONCE = 1.15f;
 
@@ -75,6 +76,8 @@ private:
 
     Mat4x4 GenerateScaleMatrix(int width, int height) const;
     Mat4x4 GenerateRotateMatrix(RotateType rotateType) const;
+
+    void SetUniformMatrix(const Mat4x4& transformMatrix);
 
     static Mat4x4 GenerateRotateMatrixByAngle(RotateType rotateType,
                                               FloatType angle);

@@ -7,9 +7,11 @@
 attribute highp vec4 position;
 attribute lowp vec4 color;
 
+uniform highp mat4x4 transformMatrix;
+
 varying lowp vec4 vColor;
 
 void main() {
     vColor = color;
-    gl_Position = position;
+    gl_Position = position * transformMatrix;
 }

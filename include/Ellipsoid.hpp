@@ -124,8 +124,7 @@ public:
               const Vec3& viewPoint);
 
     SizeType GetVertexCount() const;
-    LayerVector GenerateVertices(const Mat4x4& transfomMatrix,
-                                 const Mat4x4& scaleMatrix,
+    LayerVector GenerateVertices(const Mat4x4& rotateMatrix,
                                  const Lighting& lighting) const;
 
     void SetVertexCount(SizeType count);

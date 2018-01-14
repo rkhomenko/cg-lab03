@@ -21,7 +21,7 @@ MyMainWindow::MyMainWindow(QWidget* parent) : QMainWindow(parent) {
     format.setVersion(3, 3);
     format.setProfile(QSurfaceFormat::CoreProfile);
 
-    OpenGLWidget = new MyOpenGLWidget(0.8, 0.3, 0.4, 20, 60);
+    OpenGLWidget = new MyOpenGLWidget(1.1f, 1.5f, 0.2f, 20, 60);
     OpenGLWidget->setFormat(format);
 
     setCentralWidget(CreateCentralWidget());
@@ -40,7 +40,6 @@ QWidget* MyMainWindow::CreateCentralWidget() {
     label->setSizePolicy(fixedSizePolicy);
     toolLayout->addWidget(controlWidget);
     toolLayout->addWidget(label);
-    toolLayout->addStretch();
 
     // set connection for redraw on scale changed
     connect(controlWidget, &MyControlWidget::ScaleUpSignal, OpenGLWidget,
@@ -55,6 +54,20 @@ QWidget* MyMainWindow::CreateCentralWidget() {
             &MyOpenGLWidget::OYAngleChangedSlot);
     connect(controlWidget, &MyControlWidget::OZAngleChangedSignal, OpenGLWidget,
             &MyOpenGLWidget::OZAngleChangedSlot);
+
+    // set connection for redraw on lighting params changed
+    connect(controlWidget, &MyControlWidget::AmbientChangedSignal, OpenGLWidget,
+            &MyOpenGLWidget::AmbientChangedSlot);
+    connect(controlWidget, &MyControlWidget::SpecularChangedSignal,
+            OpenGLWidget, &MyOpenGLWidget::SpecularChangedSlot);
+    connect(controlWidget, &MyControlWidget::DiffuseChangedSignal, OpenGLWidget,
+            &MyOpenGLWidget::DiffuseChangedSlot);
+
+    // set connection for redraw on vertex or surface count changed
+    connect(controlWidget, &MyControlWidget::VertexCountChangedSignal,
+            OpenGLWidget, &MyOpenGLWidget::VertexCountChangedSlot);
+    connect(controlWidget, &MyControlWidget::SurfaceCountChangedSignal,
+            OpenGLWidget, &MyOpenGLWidget::SurfaceCountChangedSlot);
 
     mainLayout->addLayout(toolLayout);
     mainLayout->addWidget(OpenGLWidget);

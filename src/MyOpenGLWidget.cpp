@@ -20,25 +20,28 @@
 const Vec3 MyOpenGLWidget::VIEW_POINT = Vec3(0, 0, 1);
 
 MyOpenGLWidget::MyOpenGLWidget(QWidget* parent)
-    : MyOpenGLWidget(0.5, 0.5, 0.5, 0.2, 5, parent) {}
+    : MyOpenGLWidget(0.5, 0.5, 0.5, 4, 5, parent) {}
 
 MyOpenGLWidget::MyOpenGLWidget(LenghtType a,
                                LenghtType b,
                                LenghtType c,
-                               LenghtType deltaH,
-                               SizeType n,
+                               SizeType vertexCount,
+                               SizeType surfaceCount,
                                QWidget* parent)
     : QOpenGLWidget(parent),
-      EllipsoidLayer{a, b, c, deltaH, n, VIEW_POINT},
+      EllipsoidLayer{a, b, c, vertexCount, surfaceCount, VIEW_POINT},
       ScaleFactor{3.0f},
       AngleOX{0.0},
       AngleOY{0.0},
       AngleOZ{0.0},
+      AmbientCoeff{0.5},
+      SpecularCoeff{0.5},
+      DiffuseCoeff{0.5},
       A{a},
       B{b},
       C{c},
-      DeltaH{deltaH},
-      N{n} {
+      VertexCount{vertexCount},
+      SurfaceCount{surfaceCount} {
     auto sizePolicy =
         QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setSizePolicy(sizePolicy);
@@ -71,6 +74,36 @@ void MyOpenGLWidget::OYAngleChangedSlot(FloatType angle) {
 
 void MyOpenGLWidget::OZAngleChangedSlot(FloatType angle) {
     AngleOZ = angle;
+    UpdateOnChange(width(), height());
+    OnWidgetUpdate();
+}
+
+void MyOpenGLWidget::AmbientChangedSlot(float ambientCoeff) {
+    AmbientCoeff = ambientCoeff;
+    UpdateOnChange(width(), height());
+    OnWidgetUpdate();
+}
+
+void MyOpenGLWidget::SpecularChangedSlot(float specularCoeff) {
+    SpecularCoeff = specularCoeff;
+    UpdateOnChange(width(), height());
+    OnWidgetUpdate();
+}
+
+void MyOpenGLWidget::DiffuseChangedSlot(float diffuseCoeff) {
+    DiffuseCoeff = diffuseCoeff;
+    UpdateOnChange(width(), height());
+    OnWidgetUpdate();
+}
+
+void MyOpenGLWidget::VertexCountChangedSlot(int count) {
+    VertexCount = static_cast<SizeType>(count);
+    UpdateOnChange(width(), height());
+    OnWidgetUpdate();
+}
+
+void MyOpenGLWidget::SurfaceCountChangedSlot(int count) {
+    SurfaceCount = static_cast<SizeType>(count);
     UpdateOnChange(width(), height());
     OnWidgetUpdate();
 }
@@ -222,7 +255,10 @@ void MyOpenGLWidget::UpdateOnChange(int width, int height) {
 
     Vec3 light = Vec3(1, 0, 0);
     Vec3 toObserver = Vec3(0, 0, 1);
-    Lighting lighting = {0.25, 0.3, 0.1, light, toObserver};
+    Lighting lighting = {AmbientCoeff, SpecularCoeff, DiffuseCoeff, light,
+                         toObserver};
+    EllipsoidLayer.SetVertexCount(VertexCount);
+    EllipsoidLayer.SetSurfaceCount(SurfaceCount);
     Layers = EllipsoidLayer.GenerateVertices(rotateMatrix, transformMatrix,
                                              lighting);
 }

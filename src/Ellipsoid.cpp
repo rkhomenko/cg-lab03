@@ -192,33 +192,47 @@ bool Layer::CheckNormal(const Vec3& normal, const Vec3& viewPoint) {
 Ellipsoid::Ellipsoid(LenghtType a,
                      LenghtType b,
                      LenghtType c,
-                     LenghtType deltaH,
-                     SizeType n,
+                     SizeType vertexCount,
+                     SizeType surfaceCount,
                      const Vec3& viewPoint)
-    : A{a}, B{b}, C{c}, DeltaH{deltaH}, N{n}, ViewPoint{viewPoint} {}
+    : A{a},
+      B{b},
+      C{c},
+      VertexCount{vertexCount},
+      SurfaceCount{surfaceCount},
+      ViewPoint{viewPoint} {}
 
 LayerVector Ellipsoid::GenerateVertices(const Mat4x4& rotateMatrix,
                                         const Mat4x4& scaleProjMatrix,
                                         const Lighting& lighting) const {
     LayerVector layers;
-    float start = -0.2f;
-    float stop = 0.2f;
-    float delta = (stop - start) / DeltaH;
+    float start = -0.1f;
+    float stop = 0.1f;
+    float delta = (stop - start) / SurfaceCount;
     auto height = start;
     for (height = start; height <= stop; height += delta) {
-        auto layer =
-            Layer(A, B, C, height, N, delta, rotateMatrix, ViewPoint, lighting);
+        auto layer = Layer(A, B, C, height, VertexCount, delta, rotateMatrix,
+                           ViewPoint, lighting);
         if (layer.GetItemsCount() != 0) {
             layers.emplace_back(layer);
         }
     }
     for (auto h : {start, height}) {
-        auto layer = Layer(A, B, C, h, N, rotateMatrix, ViewPoint, lighting);
+        auto layer =
+            Layer(A, B, C, h, VertexCount, rotateMatrix, ViewPoint, lighting);
         if (layer.GetItemsCount() != 0) {
             layers.emplace_back(layer);
         }
     }
     return ApplyMatrix(layers, scaleProjMatrix);
+}
+
+void Ellipsoid::SetVertexCount(SizeType count) {
+    VertexCount = count;
+}
+
+void Ellipsoid::SetSurfaceCount(SizeType count) {
+    SurfaceCount = count;
 }
 
 LayerVector Ellipsoid::ApplyMatrix(const LayerVector& layers,

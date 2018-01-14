@@ -27,8 +27,8 @@ public:
     explicit MyOpenGLWidget(LenghtType a,
                             LenghtType b,
                             LenghtType c,
-                            LenghtType deltaH,
-                            SizeType n,
+                            SizeType vertexCount,
+                            SizeType surfaceCount,
                             QWidget* parent = nullptr);
 
 public slots:
@@ -38,6 +38,13 @@ public slots:
     void OXAngleChangedSlot(FloatType angle);
     void OYAngleChangedSlot(FloatType angle);
     void OZAngleChangedSlot(FloatType angle);
+
+    void AmbientChangedSlot(float ambientCoeff);
+    void SpecularChangedSlot(float specularCoeff);
+    void DiffuseChangedSlot(float diffuseCoeff);
+
+    void VertexCountChangedSlot(int count);
+    void SurfaceCountChangedSlot(int count);
 
 protected:
     void initializeGL() override;
@@ -81,11 +88,14 @@ private:
     FloatType AngleOX;
     FloatType AngleOY;
     FloatType AngleOZ;
+    FloatType AmbientCoeff;
+    FloatType SpecularCoeff;
+    FloatType DiffuseCoeff;
     FloatType A;
     FloatType B;
     FloatType C;
-    FloatType DeltaH;
-    SizeType N;
+    SizeType VertexCount;
+    SizeType SurfaceCount;
     LayerVector Layers;
 };
 

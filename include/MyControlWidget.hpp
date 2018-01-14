@@ -27,6 +27,13 @@ signals:
     void OYAngleChangedSignal(float angle);
     void OZAngleChangedSignal(float angle);
 
+    void VertexCountChangedSignal(int vertexCount);
+    void SurfaceCountChangedSignal(int surfaceCount);
+
+    void AmbientChangedSignal(float ambientCoeff);
+    void SpecularChangedSignal(float specularCoeff);
+    void DiffuseChangedSignal(float diffuseCoeff);
+
 private:
     static const float PI;
     static const float TETA_MAX;

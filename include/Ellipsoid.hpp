@@ -119,14 +119,17 @@ public:
     Ellipsoid(LenghtType a,
               LenghtType b,
               LenghtType c,
-              LenghtType deltaH,
-              SizeType n,
+              SizeType vertexCount,
+              SizeType surfaceCount,
               const Vec3& viewPoint);
 
     SizeType GetVertexCount() const;
     LayerVector GenerateVertices(const Mat4x4& transfomMatrix,
                                  const Mat4x4& scaleMatrix,
                                  const Lighting& lighting) const;
+
+    void SetVertexCount(SizeType count);
+    void SetSurfaceCount(SizeType count);
 
 private:
     static LayerVector ApplyMatrix(const LayerVector& layers,
@@ -135,8 +138,8 @@ private:
     LenghtType A;
     LenghtType B;
     LenghtType C;
-    LenghtType DeltaH;
-    SizeType N;
+    SizeType VertexCount;
+    SizeType SurfaceCount;
     Vec3 ViewPoint;
 };
 
